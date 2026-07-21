@@ -1,0 +1,7 @@
+
+/node_modules
+/nest-cli.json
+/dist
+/README.md
+/tsconfig.build.json
+.env
