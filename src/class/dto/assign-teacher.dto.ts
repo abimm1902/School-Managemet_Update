@@ -1,9 +1,11 @@
 import { IsNotEmpty, IsString } from "class-validator";
 
 export class AssignTeacherDto {
+  
+  
   @IsString()
   @IsNotEmpty()
-  sectionId!: string;
+  subjectId!:string;
 
   @IsString()
   @IsNotEmpty()

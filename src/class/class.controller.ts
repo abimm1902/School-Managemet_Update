@@ -3,10 +3,11 @@ import { ClassService } from "./class.service";
 import { CreateClassDto, CreateSectionDto } from "./dto/create-class.dto";
 import { UpdateClassDto } from "./dto/update-class.dto";
 import { AssignStudentDto } from "./dto/assign-student.dto";
-import { AssignTeacherDto } from "./dto/assign-teacher.dto";
 import { JwtAuthGuard } from "src/auth/jwt-auth.guard";
 import { AdminOnlyGuard } from "src/auth/roles.guards";
 import { UpdateSectionDto } from "./dto/update-class.dto";
+import { CreateSubjectDto } from "./dto/create-subject.dto"
+import { AssignTeacherDto } from "./dto/assign-teacher.dto";
 
 
 @Controller("classes")
@@ -46,12 +47,21 @@ export class ClassController {
     return this.classService.removeStudent(id, sectionId, studentId);
   }
 
-  // Admin-only: assign a teacher to a class + section
   @UseGuards(JwtAuthGuard, AdminOnlyGuard)
-  @Post(":id/teachers")
-  assignTeacher(@Param("id") id: string, @Body() dto: AssignTeacherDto) {
-    return this.classService.assignTeacher(id, dto);
+     @Post("subjects")
+     createSub(@Body() dto: CreateSubjectDto) {
+       return this.classService.createSubject(dto);
+     }
+     @Get("subjects")
+  getsubject(){
+    return this.classService.findAll();
   }
+
+   @UseGuards(JwtAuthGuard, AdminOnlyGuard)
+   @Post("subjects/:id/teachers")
+   assignTeacher(@Param("id") id:string ,@Body() dto: AssignTeacherDto) {
+     return this.classService.assignTeacher(id,dto);
+   }
 
   @Get()
   findAll() {

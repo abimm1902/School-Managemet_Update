@@ -1,13 +1,17 @@
 import {  BadRequestException,  Injectable,  NotFoundException,} from "@nestjs/common";
 import { v4 as uuidv4 } from "uuid";
 import { ClassRepository } from "./class.repository";
-import { Section, SchoolClass } from "./interfaces/class.interface";
+import { Section, SchoolClass} from "./interfaces/class.interface";
 import { CreateClassDto, CreateSectionDto } from "./dto/create-class.dto";
 import { UpdateClassDto, UpdateSectionDto } from "./dto/update-class.dto";
 import { AssignStudentDto } from "./dto/assign-student.dto";
+import {Subject} from "./interfaces/subject.interface"
+import { CreateSubjectDto} from "./dto/create-subject.dto";
 import { AssignTeacherDto } from "./dto/assign-teacher.dto";
 
 
+
+const DOC_PREFIX = "subject::";
 @Injectable()
 export class ClassService {
   constructor(private readonly classRepo: ClassRepository) {}
@@ -34,6 +38,59 @@ export class ClassService {
     await this.classRepo.create(newClass);
     return newClass;
   }
+   //create Subject
+    async createSubject (dto:CreateSubjectDto){
+       
+      const existing=await this.classRepo.findByName(dto.name);
+     if (existing) {
+           throw new BadRequestException(
+             `A subject named "${dto.name}" already exists`
+           );
+         }
+         const id = uuidv4();
+       const newSubject: Subject = {
+           meta_id:`subject::${id}`,
+           id,
+           name:dto.name,
+           sectionId:dto.sectionId,
+           classId:dto.classId,
+       
+         };
+   
+    await this.classRepo.createsub(newSubject);
+       return newSubject;
+   
+    }
+   
+   
+    /** GET ALL */
+     async findAllSub(): Promise<Subject[]> {
+       return await this.classRepo.findAllSub();
+     }
+      
+   
+    async assignTeacher(subjectId:string,dto:AssignTeacherDto):Promise<Subject>{
+       // 1. Find the subject from database
+     const subject = await this.classRepo.findByIdsub(subjectId);
+   
+     if (!subject) {
+       throw new NotFoundException("Subject not found");
+     }
+   
+     if (subject.teacherId === dto.teacherId) {
+        return subject;
+     }
+   
+      subject.teacherId = dto.teacherId;
+   
+     await this.classRepo.updateSub(subject);
+   
+     return subject;
+    }
+   
+
+   
+
 
   /** Add a section (e.g. "A", "B") to an existing class. Admin only. */
   async addSection(  classId: string,  dto: CreateSectionDto ): Promise<SchoolClass> {
@@ -52,7 +109,7 @@ export class ClassService {
       id: uuidv4(),
       name: dto.name,
       studentIds: [],
-      teacherIds: [],
+      
     };
 
     schoolClass.sections.push(newSection);
@@ -66,9 +123,7 @@ export class ClassService {
   //Assign a student to a class + section.
   
   
-  async assignStudent(
-    classId: string,
-    dto: AssignStudentDto
+  async assignStudent( classId: string,  dto: AssignStudentDto
   ): Promise<SchoolClass> {
     const schoolClass = await this.getOrThrow(classId);
 
@@ -111,35 +166,6 @@ export class ClassService {
     }
 
     section.studentIds = section.studentIds.filter((id) => id !== studentId);
-    schoolClass.updatedAt = Date.now();
-
-    await this.classRepo.update(schoolClass);
-    return schoolClass;
-  }
-
-  /** Assign a teacher to a class + section. Admin only. */
-  async assignTeacher(
-    classId: string,
-    dto: AssignTeacherDto
-  ): Promise<SchoolClass> {
-    const schoolClass = await this.getOrThrow(classId);
-
-    const section = schoolClass.sections.find((s) => s.id === dto.sectionId);
-    if (!section) {
-      throw new NotFoundException("Section not found");
-    }
-     // If teacherIds is undefined, initialize it as an empty array
-    const teacherIds = section.teacherIds ?? [];
-
-     // Check whether the teacher is already assigned
-    if (teacherIds.includes(dto.teacherId)) {
-      throw new BadRequestException(
-        "Teacher is already assigned to this section"
-      );
-    }
-
-    teacherIds.push(dto.teacherId);
-    section.teacherIds = teacherIds;
     schoolClass.updatedAt = Date.now();
 
     await this.classRepo.update(schoolClass);
@@ -206,7 +232,7 @@ export class ClassService {
     return { message: "Class deleted successfully" };
   }
 
-  private async getOrThrow(id: string): Promise<SchoolClass> {
+private async getOrThrow(id: string): Promise<SchoolClass> {
     const schoolClass = await this.classRepo.findById(id);
     if (!schoolClass) {
       throw new NotFoundException(`Class with id ${id} not found`);

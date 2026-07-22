@@ -4,6 +4,7 @@ export class CreateClassDto {
   @IsString()
   @IsNotEmpty()
   name!: string; // e.g. "Class 7"
+  subject!:string;
 }
 
 export class CreateSectionDto {
@@ -12,3 +13,4 @@ export class CreateSectionDto {
   name!: string; // e.g. "A"
 
 }
+
